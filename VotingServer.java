@@ -21,8 +21,7 @@ public class VotingServer {
     }
 
     public static void main(String[] args) throws Exception {
-        HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
-
+        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", PORT), 0);
         // Candidates
         server.createContext("/api/candidates", e -> {
             sendJson(e, 200,
