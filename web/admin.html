@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Admin Panel</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="vote">
+
+<h1>Administrator Dashboard</h1>
+
+<div id="loginBox">
+  <input id="password" type="password" placeholder="Enter Password">
+  <button onclick="login()">Login</button>
+</div>
+
+<div id="panel" style="display:none;">
+
+  <div id="results" class="grid"></div>
+
+  <h2 id="winner"></h2>
+
+  <button onclick="endElection()">End Election</button>
+
+</div>
+
+<script>
+
+function login() {
+  const pass = document.getElementById("password").value;
+
+  if (pass === "29032006") {
+    document.getElementById("panel").style.display = "block";
+    document.getElementById("loginBox").style.display = "none";
+    loadResults();
+  } else {
+    alert("Wrong Password");
+  }
+}
+
+async function loadResults() {
+  const res = await fetch("/api/results");
+  const data = await res.json();
+
+  let winner = "";
+  let max = 0;
+
+  const container = document.getElementById("results");
+  container.innerHTML = "";
+
+  const images = {
+    naruto: "/images/naruto.jpg",
+    luffy: "/images/luffy.jpg",
+    goku: "/images/goku.jpg"
+  };
+
+  for (let c in data) {
+    let voters = data[c];
+    let count = voters.length;
+
+    if (count > max) {
+      max = count;
+      winner = c;
+    }
+
+    container.innerHTML += `
+      <div class="card">
+        <img src="${images[c]}">
+        <h2>${c.toUpperCase()}</h2>
+        <p>Votes: ${count}</p>
+        <p>Voters: ${voters.join(", ") || "None"}</p>
+      </div>
+    `;
+  }
+
+  document.getElementById("winner").innerText =
+    "Winner: " + winner.toUpperCase() + " (" + max + " votes)";
+}
+
+async function endElection() {
+  await fetch("/api/end");
+  alert("Election Ended");
+}
+
+</script>
+
+</body>
+</html>

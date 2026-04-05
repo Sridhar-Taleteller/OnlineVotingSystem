@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Anime Election</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="home">
+
+<div class="overlay">
+  <h1>ANIME ELECTION 2026</h1>
+  <p>Choose your leader. One vote per voter.</p>
+
+  <input id="voterId" placeholder="Enter Voter ID">
+  <button onclick="startVoting()">Start Voting</button>
+  <button onclick="window.location='admin.html'">Admin Panel</button>
+
+  <p id="msg"></p>
+</div>
+
+<script>
+async function startVoting() {
+  const id = document.getElementById("voterId").value.trim();
+  const msg = document.getElementById("msg");
+
+  if (!id) {
+    msg.innerText = "Enter Voter ID";
+    return;
+  }
+
+  const res = await fetch(`/api/check?voterId=${id}`);
+  const data = await res.json();
+
+  if (data.voted) {
+    msg.innerText = "You have already voted.";
+    return;
+  }
+
+  localStorage.setItem("voterId", id);
+  window.location = "vote.html";
+}
+</script>
+
+</body>
+</html>

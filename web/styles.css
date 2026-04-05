@@ -1,0 +1,85 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  color: white;
+}
+
+/* HOME */
+.home {
+  height: 100vh;
+  background: url("/images/electionposter.jpg") no-repeat center/cover;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.overlay {
+  background: rgba(0,0,0,0.75);
+  padding: 50px;
+  border-radius: 15px;
+  text-align: center;
+}
+
+.overlay h1 {
+  font-size: 40px;
+}
+
+input {
+  padding: 15px;
+  width: 260px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 5px;
+}
+
+button {
+  padding: 15px 20px;
+  margin-top: 15px;
+  border: none;
+  background: orange;
+  cursor: pointer;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+/* VOTE PAGE */
+.vote {
+  min-height: 100vh;
+  background: #0f172a;
+  text-align: center;
+  padding-top: 30px;
+}
+
+.subtitle {
+  color: #ccc;
+}
+
+.grid {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 40px;
+  flex-wrap: wrap;
+}
+
+.card {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 12px;
+  width: 260px;
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: scale(1.05);
+}
+
+.card img {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.card button {
+  width: 100%;
+  margin-top: 10px;
+}

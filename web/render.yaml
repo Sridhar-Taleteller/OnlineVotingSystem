@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: OnlineVotingSystem
+    env: java
+    buildCommand: javac VotingServer.java
+    startCommand: java VotingServer
