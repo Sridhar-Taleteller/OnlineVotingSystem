@@ -7,7 +7,12 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class VotingServer {
-    private static final int PORT = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
+
+    // ✅ FIXED PORT (Render compatible)
+    private static final int PORT = Integer.parseInt(
+        System.getenv().getOrDefault("PORT", "8080")
+    );
+
     private static final Path WEB_ROOT = Paths.get("web").toAbsolutePath();
 
     private static final Map<String, List<String>> VOTES = new ConcurrentHashMap<>();
@@ -21,8 +26,15 @@ public class VotingServer {
     }
 
     public static void main(String[] args) throws Exception {
-        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", PORT), 0);
-        // Candidates
+
+        // ✅ FIXED BINDING
+        HttpServer server = HttpServer.create(
+            new InetSocketAddress("0.0.0.0", PORT), 0
+        );
+
+        // =========================
+        // 🎯 CANDIDATES API
+        // =========================
         server.createContext("/api/candidates", e -> {
             sendJson(e, 200,
                 "{ \"candidates\": [" +
@@ -32,8 +44,11 @@ public class VotingServer {
                 "]}");
         });
 
-        // Vote
+        // =========================
+        // 🗳️ VOTE API
+        // =========================
         server.createContext("/api/vote", e -> {
+
             if (electionEnded) {
                 sendJson(e, 403, "{\"error\":\"Voting stopped\"}");
                 return;
@@ -42,8 +57,13 @@ public class VotingServer {
             String body = new String(e.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             Map<String, String> data = parse(body);
 
-            String voter = data.get("voterId");
-            String candidate = data.get("candidateId");
+            String voter = data.getOrDefault("voterId", "");
+            String candidate = data.getOrDefault("candidateId", "");
+
+            if (voter.isEmpty() || candidate.isEmpty()) {
+                sendJson(e, 400, "{\"error\":\"Invalid data\"}");
+                return;
+            }
 
             if (VOTED.contains(voter)) {
                 sendJson(e, 409, "{\"error\":\"Already voted\"}");
@@ -56,10 +76,17 @@ public class VotingServer {
             sendJson(e, 200, "{\"message\":\"Vote successful\"}");
         });
 
-        // Check
+        // =========================
+        // 🔍 CHECK API
+        // =========================
         server.createContext("/api/check", e -> {
+
             String query = e.getRequestURI().getQuery();
-            String voter = query.split("=")[1];
+            String voter = "";
+
+            if (query != null && query.contains("=")) {
+                voter = query.split("=")[1];
+            }
 
             if (electionEnded) {
                 sendJson(e, 200, "{\"status\":\"stopped\"}");
@@ -70,61 +97,96 @@ public class VotingServer {
             sendJson(e, 200, "{\"voted\":" + voted + "}");
         });
 
-        // Admin results (FULL DATA)
+        // =========================
+        // 📊 RESULTS API
+        // =========================
         server.createContext("/api/results", e -> {
-            String json = "{";
+
+            StringBuilder json = new StringBuilder("{");
 
             for (String c : VOTES.keySet()) {
-                json += "\"" + c + "\":[";
+                json.append("\"").append(c).append("\":[");
                 List<String> voters = VOTES.get(c);
 
                 for (int i = 0; i < voters.size(); i++) {
-                    json += "\"" + voters.get(i) + "\"";
-                    if (i < voters.size() - 1) json += ",";
+                    json.append("\"").append(voters.get(i)).append("\"");
+                    if (i < voters.size() - 1) json.append(",");
                 }
-                json += "],";
+
+                json.append("],");
             }
 
-            json = json.substring(0, json.length() - 1) + "}";
-            sendJson(e, 200, json);
+            json.deleteCharAt(json.length() - 1);
+            json.append("}");
+
+            sendJson(e, 200, json.toString());
         });
 
-        // End election
+        // =========================
+        // 🛑 END ELECTION
+        // =========================
         server.createContext("/api/end", e -> {
             electionEnded = true;
             sendJson(e, 200, "{\"message\":\"Election ended\"}");
         });
 
-        // Static
+        // =========================
+        // 🌐 STATIC FILES (FIXED)
+        // =========================
         server.createContext("/", e -> {
+
             String path = e.getRequestURI().getPath();
             if (path.equals("/")) path = "/index.html";
 
-            Path file = WEB_ROOT.resolve("." + path);
-            if (!Files.exists(file)) file = WEB_ROOT.resolve("index.html");
+            Path file = WEB_ROOT.resolve(path.substring(1));
+
+            if (!Files.exists(file)) {
+                file = WEB_ROOT.resolve("index.html");
+            }
 
             byte[] data = Files.readAllBytes(file);
+
+            String contentType = "text/html";
+            if (path.endsWith(".css")) contentType = "text/css";
+            else if (path.endsWith(".js")) contentType = "application/javascript";
+            else if (path.endsWith(".jpg") || path.endsWith(".jpeg")) contentType = "image/jpeg";
+            else if (path.endsWith(".png")) contentType = "image/png";
+
+            e.getResponseHeaders().set("Content-Type", contentType);
             e.sendResponseHeaders(200, data.length);
             e.getResponseBody().write(data);
             e.close();
         });
 
+        // ✅ START SERVER (CRITICAL)
         server.start();
-        System.out.println("Server running → http://localhost:8080");
+
+        System.out.println("Server started on port " + PORT);
     }
 
+    // =========================
+    // 🔧 PARSER
+    // =========================
     static Map<String, String> parse(String body) {
         Map<String, String> map = new HashMap<>();
+
         for (String pair : body.split("&")) {
             String[] p = pair.split("=");
-            map.put(p[0], p[1]);
+            if (p.length == 2) {
+                map.put(URLDecoder.decode(p[0], StandardCharsets.UTF_8),
+                        URLDecoder.decode(p[1], StandardCharsets.UTF_8));
+            }
         }
+
         return map;
     }
 
+    // =========================
+    // 📤 JSON RESPONSE
+    // =========================
     static void sendJson(HttpExchange e, int code, String json) throws IOException {
         e.getResponseHeaders().set("Content-Type", "application/json");
-        e.sendResponseHeaders(code, json.length());
+        e.sendResponseHeaders(code, json.getBytes().length);
         e.getResponseBody().write(json.getBytes());
         e.close();
     }
